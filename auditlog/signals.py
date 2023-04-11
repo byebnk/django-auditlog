@@ -1,8 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in, user_logged_out, user_login_failed
 from django.dispatch import receiver
 
 from auditlog.models import AuditLog
-from authentication.models import Usuario  # This must be Agnostic
 
 
 @receiver(user_logged_in)
@@ -20,7 +20,8 @@ def user_logged_out_callback(sender, request, user, **kwargs):
 @receiver(user_login_failed)
 def user_login_failed_callback(sender, request, credentials, **kwargs):
     try:
-        user = Usuario.objects.get(username=credentials['username'], is_staff=True)
+        UserModel = get_user_model()
+        user = UserModel.objects.get(username=credentials['username'], is_staff=True)
         AuditLog.objects.log(request=request, action=AuditLog.Actions.LOGIN_FAILED, obj=user, principal=user)
-    except Usuario.DoesNotExist:
+    except UserModel.DoesNotExist:
         pass
