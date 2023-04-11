@@ -1,2 +1,4 @@
-.tool-versions
+__pycache__
 venv
+django_auditlog.egg-info
+.tool-versions
