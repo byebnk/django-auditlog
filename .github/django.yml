@@ -1,0 +1,59 @@
+name: Django
+on: [push]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Run static analysis
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Run flake8
+      run: |
+        pip install flake8
+        flake8 --max-line-length=120 . --exclude=migrations --verbose
+    - name: Run isort
+      run: |
+        pip install isort
+        isort --diff --check .
+
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    needs: [static]
+    services:
+      database:
+        image: postgres:13-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Build docker image
+      run: |
+        echo $GITHUB_SHA > version
+        docker build -t ci-image .
+    - name: Start application container
+      run: |
+        docker run --name build -d -e DATABASE_URL="postgresql://postgres:postgres@172.17.0.1/postgres" ci-image
+        docker exec --user root build chown django:django /var/www/
+        docker exec build pip install -r requirements.txt
+    - name: Test migrations
+      run: |
+        docker exec build python3 manage.py makemigrations --check --dry-run -v2
+        docker exec build python3 manage.py migrate -v 3
+    - name: Run test suite
+      run: |
+        docker exec build python3 -m django-admin test --settings=settings
+
+    - name: Stop application container
+      run: |
+        docker stop build
