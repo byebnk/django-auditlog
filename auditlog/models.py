@@ -5,8 +5,6 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from ipware import get_client_ip
 
-from .managers import AuditLogManager
-
 
 class AuditLogManager(models.Manager):
     def log(self, *, request, action, obj, principal=None, description=None):
