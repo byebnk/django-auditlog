@@ -37,7 +37,7 @@ class AuditLog(models.Model):
         OTHER = 'other', _('Other')
 
     date = models.DateTimeField(default=timezone.now)
-    principal = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    principal = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     action = models.CharField(max_length=100, choices=Actions.choices)
     description = models.CharField(max_length=100, null=True, blank=True)
     object = models.CharField(max_length=100)
